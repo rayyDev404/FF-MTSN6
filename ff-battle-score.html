@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FF Battle Score</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Exo+2:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --fire:#FF6200;--fire-lt:#FF8C00;--gold:#FFB800;
+  --bg:#07080E;--surface:#0D0F18;--card:#111420;--card2:#161A28;
+  --border:rgba(255,98,0,0.14);--border2:rgba(255,98,0,0.08);
+  --text:#E6E8F5;--muted:#5C6080;--green:#00E599;--red:#FF4D4D;
+}
+
+body{background:var(--bg);color:var(--text);font-family:'Exo 2',sans-serif;min-height:100vh;overflow-x:hidden;}
+
+.bg-layer{position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 60% 40% at 15% 10%,rgba(255,98,0,0.07) 0%,transparent 60%),
+             radial-gradient(ellipse 50% 50% at 85% 85%,rgba(255,184,0,0.04) 0%,transparent 55%);}
+.bg-grid{position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(rgba(255,98,0,0.025) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(255,98,0,0.025) 1px,transparent 1px);
+  background-size:48px 48px;}
+
+.wrapper{max-width:940px;margin:0 auto;padding:28px 18px 72px;position:relative;z-index:1;}
+
+/* HEADER */
+.header{text-align:center;margin-bottom:36px;animation:fadeDown .55s cubic-bezier(.22,1,.36,1) both;}
+.header-badge{display:inline-flex;align-items:center;gap:7px;background:rgba(255,98,0,0.1);
+  border:1px solid rgba(255,98,0,0.25);border-radius:100px;padding:4px 18px;
+  font-size:10.5px;font-weight:700;letter-spacing:2.5px;color:var(--fire);text-transform:uppercase;margin-bottom:14px;}
+.header h1{font-family:'Rajdhani',sans-serif;font-size:clamp(2.2rem,7vw,4rem);font-weight:700;
+  letter-spacing:3px;line-height:1;
+  background:linear-gradient(120deg,#FF6200 0%,#FFB800 45%,#FF6200 100%);
+  background-size:220% 220%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;animation:shimmer 4s ease infinite;}
+.header-sub{color:var(--muted);font-size:12.5px;margin-top:8px;letter-spacing:.6px;}
+
+/* INPUTS */
+.section{margin-bottom:20px;animation:fadeUp .55s cubic-bezier(.22,1,.36,1) .08s both;}
+.label{display:flex;align-items:center;gap:9px;font-size:10px;font-weight:700;
+  letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;}
+.label-dot{width:3px;height:14px;background:var(--fire);border-radius:2px;flex-shrink:0;}
+
+input[type="text"],input[type="number"]{
+  width:100%;background:var(--card);border:1px solid var(--border);border-radius:11px;
+  padding:13px 17px;color:var(--text);font-family:'Exo 2',sans-serif;
+  font-size:15px;font-weight:500;transition:border-color .2s,box-shadow .2s;
+  outline:none;-webkit-appearance:none;}
+input[type="text"]:focus,input[type="number"]:focus{
+  border-color:var(--fire);box-shadow:0 0 0 3px rgba(255,98,0,0.1),0 0 24px rgba(255,98,0,0.06);}
+input::placeholder{color:var(--muted);opacity:.7;}
+
+/* INPUT GRID */
+.input-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;
+  animation:fadeUp .55s cubic-bezier(.22,1,.36,1) .16s both;}
+@media(max-width:580px){.input-grid{grid-template-columns:1fr;}}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;}
+
+/* RANK */
+.rank-big{display:flex;align-items:baseline;gap:5px;margin:14px 0 16px;}
+.rank-hash{font-family:'Rajdhani',sans-serif;font-size:26px;color:var(--fire);font-weight:700;line-height:1;}
+.rank-num-disp{font-family:'Rajdhani',sans-serif;font-size:56px;font-weight:700;
+  color:var(--text);line-height:1;transition:color .25s;min-width:70px;}
+.rank-pts-aside{margin-left:auto;text-align:right;}
+.rank-pts-aside .pts-num{font-family:'Rajdhani',sans-serif;font-size:28px;
+  font-weight:700;color:var(--gold);display:block;line-height:1;}
+.rank-pts-aside .pts-lbl{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+
+input[type="range"]{-webkit-appearance:none;width:100%;height:5px;
+  background:rgba(255,98,0,0.15);border-radius:5px;outline:none;cursor:pointer;padding:0;border:none;}
+input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;
+  border-radius:50%;background:linear-gradient(135deg,var(--fire),var(--gold));cursor:pointer;
+  box-shadow:0 0 12px rgba(255,98,0,0.55);transition:box-shadow .2s,transform .2s;}
+input[type="range"]::-webkit-slider-thumb:hover{transform:scale(1.25);box-shadow:0 0 22px rgba(255,98,0,0.85);}
+.slider-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:7px;font-weight:600;}
+
+/* KILL */
+.kill-chips{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 8px;min-height:30px;align-items:center;}
+.chip{background:rgba(0,229,153,0.1);border:1px solid rgba(0,229,153,0.22);border-radius:6px;
+  padding:3px 11px;font-size:13px;font-weight:700;color:var(--green);
+  font-family:'Rajdhani',sans-serif;animation:popIn .18s cubic-bezier(.34,1.56,.64,1);}
+.kill-footer{display:flex;justify-content:space-between;align-items:center;
+  margin-top:6px;border-top:1px solid var(--border2);padding-top:10px;}
+.kill-footer-lbl{font-size:11px;color:var(--muted);}
+.kill-total-num{font-family:'Rajdhani',sans-serif;font-size:26px;font-weight:700;color:var(--green);}
+
+/* RESULT */
+.result-card{border:1px solid rgba(255,98,0,0.22);border-radius:16px;padding:22px;
+  background:linear-gradient(145deg,rgba(255,98,0,0.06) 0%,rgba(255,184,0,0.03) 100%);
+  margin-bottom:20px;position:relative;overflow:hidden;
+  animation:fadeUp .55s cubic-bezier(.22,1,.36,1) .24s both;}
+.result-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent 0%,var(--fire) 30%,var(--gold) 55%,var(--fire) 80%,transparent 100%);
+  animation:scan 3.5s linear infinite;}
+.result-label{font-family:'Rajdhani',sans-serif;font-size:11px;letter-spacing:3px;
+  color:var(--muted);text-transform:uppercase;text-align:center;margin-bottom:18px;}
+.result-row{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;}
+.res-block{text-align:center;flex:1;min-width:60px;}
+.res-lbl{font-size:10px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;}
+.res-val{font-family:'Rajdhani',sans-serif;font-size:40px;font-weight:700;line-height:1;}
+.res-val.rv-rank{color:var(--gold);}
+.res-val.rv-kill{color:var(--green);}
+.res-val.rv-total{color:var(--fire);font-size:54px;text-shadow:0 0 28px rgba(255,98,0,0.35);animation:glowPulse 2.2s ease infinite;}
+.res-divider{font-size:22px;color:var(--muted);opacity:.5;font-weight:300;flex-shrink:0;}
+
+/* BUTTONS */
+.btn-row{display:flex;gap:12px;animation:fadeUp .55s cubic-bezier(.22,1,.36,1) .32s both;}
+.btn{flex:1;padding:14px 10px;border-radius:11px;border:none;cursor:pointer;
+  font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;
+  letter-spacing:1.5px;text-transform:uppercase;
+  transition:transform .15s,box-shadow .15s,background .2s,color .2s,border-color .2s;
+  position:relative;overflow:hidden;}
+.btn:active{transform:scale(.97);}
+.btn-primary{background:linear-gradient(130deg,var(--fire) 0%,var(--fire-lt) 100%);color:#fff;
+  box-shadow:0 4px 22px rgba(255,98,0,0.28);}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(255,98,0,0.5);}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,0.07);}
+.btn-ghost:hover{border-color:rgba(255,98,0,0.35);color:var(--fire);}
+
+/* SORT TOGGLE */
+.sort-toggle{display:flex;gap:6px;}
+.sort-btn{padding:7px 14px;border-radius:8px;border:1px solid var(--border);
+  background:transparent;color:var(--muted);cursor:pointer;
+  font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;
+  text-transform:uppercase;transition:all .2s;white-space:nowrap;}
+.sort-btn.active{background:rgba(255,98,0,0.12);border-color:rgba(255,98,0,0.4);color:var(--fire);}
+.sort-btn:hover:not(.active){border-color:rgba(255,98,0,0.25);color:var(--text);}
+
+/* RESET BTN */
+.btn-danger{flex:none;background:transparent;color:var(--red);
+  border:1px solid rgba(255,77,77,0.2);padding:7px 15px;font-size:12px;
+  border-radius:8px;letter-spacing:1px;cursor:pointer;
+  font-family:'Rajdhani',sans-serif;font-weight:700;text-transform:uppercase;
+  transition:all .2s;}
+.btn-danger:hover{background:rgba(255,77,77,0.09);border-color:rgba(255,77,77,0.4);}
+
+/* CUSTOM CONFIRM DIALOG */
+.confirm-overlay{
+  position:fixed;inset:0;background:rgba(7,8,14,0.82);
+  backdrop-filter:blur(6px);z-index:500;
+  display:flex;align-items:center;justify-content:center;
+  animation:fadeIn .2s ease;}
+.confirm-box{
+  background:var(--card2);border:1px solid rgba(255,77,77,0.3);
+  border-radius:18px;padding:28px 28px 22px;max-width:340px;width:90%;
+  animation:popIn .25s cubic-bezier(.34,1.56,.64,1);}
+.confirm-icon{font-size:30px;margin-bottom:10px;}
+.confirm-title{font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;
+  color:var(--text);margin-bottom:6px;}
+.confirm-sub{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:20px;}
+.confirm-btns{display:flex;gap:10px;}
+.confirm-yes{flex:1;padding:11px;border-radius:9px;border:none;cursor:pointer;
+  background:var(--red);color:#fff;font-family:'Rajdhani',sans-serif;
+  font-size:14px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  transition:opacity .15s;}
+.confirm-yes:hover{opacity:.85;}
+.confirm-no{flex:1;padding:11px;border-radius:9px;cursor:pointer;
+  background:transparent;border:1px solid rgba(255,255,255,0.1);color:var(--muted);
+  font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;
+  letter-spacing:1px;text-transform:uppercase;transition:all .15s;}
+.confirm-no:hover{border-color:rgba(255,255,255,0.25);color:var(--text);}
+
+/* SEPARATOR */
+.sep{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:28px 0;}
+
+/* BOARD */
+.history{margin-top:32px;animation:fadeUp .55s cubic-bezier(.22,1,.36,1) .4s both;}
+.history-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;}
+.history-title{font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;letter-spacing:2px;}
+.board-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+
+.count-badge{background:rgba(255,98,0,0.1);border:1px solid rgba(255,98,0,0.28);
+  border-radius:8px;padding:6px 14px;font-family:'Rajdhani',sans-serif;
+  font-size:13px;font-weight:700;color:var(--fire);letter-spacing:.5px;}
+
+/* EMPTY */
+.empty{text-align:center;padding:44px 20px;color:var(--muted);font-size:13.5px;
+  border:1px dashed rgba(255,98,0,0.13);border-radius:16px;line-height:1.8;}
+.empty-icon{font-size:32px;display:block;margin-bottom:10px;opacity:.6;}
+
+/* TABLE */
+.table-wrap{border:1px solid var(--border);border-radius:16px;overflow:hidden;overflow-x:auto;}
+table{width:100%;border-collapse:collapse;min-width:500px;}
+thead{background:rgba(255,98,0,0.07);}
+th{padding:11px 14px;font-size:10px;letter-spacing:1.8px;color:var(--muted);
+  text-transform:uppercase;font-weight:700;text-align:center;white-space:nowrap;}
+th:first-child,th:nth-child(2){text-align:left;}
+tbody tr{border-top:1px solid var(--border2);transition:background .18s;
+  animation:slideRow .28s cubic-bezier(.22,1,.36,1);}
+tbody tr:hover{background:rgba(255,98,0,0.04);}
+td{padding:11px 14px;font-size:14px;text-align:center;}
+td:first-child,td:nth-child(2){text-align:left;}
+
+/* Position badge */
+.pos-badge{display:inline-flex;align-items:center;justify-content:center;
+  width:28px;height:28px;border-radius:7px;
+  font-family:'Rajdhani',sans-serif;font-weight:700;font-size:14px;flex-shrink:0;}
+.pos-1{background:rgba(255,184,0,0.2);color:#FFD700;border:1px solid rgba(255,184,0,0.4);}
+.pos-2{background:rgba(192,192,192,0.15);color:#C0C0C0;border:1px solid rgba(192,192,192,0.3);}
+.pos-3{background:rgba(205,127,50,0.15);color:#CD7F32;border:1px solid rgba(205,127,50,0.3);}
+.pos-n{background:rgba(255,98,0,0.08);color:var(--muted);border:1px solid var(--border2);}
+
+.team-cell-wrap{display:flex;align-items:center;gap:8px;}
+.team-name-cell{font-weight:600;color:var(--text);font-size:14px;}
+
+.rank-td{color:var(--gold);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:16px;}
+.kill-td{color:var(--green);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:16px;}
+.total-td{color:var(--fire);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:19px;}
+.detail-td{font-size:12px;color:var(--muted);max-width:130px;word-break:break-all;line-height:1.5;}
+
+tfoot tr{background:rgba(255,98,0,0.06);}
+tfoot td{border-top:1px solid rgba(255,98,0,0.2);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:14px;}
+.grand-td{color:var(--fire);font-size:22px;text-shadow:0 0 18px rgba(255,98,0,0.4);}
+
+/* SORT INDICATOR on th */
+th.sort-active{color:var(--fire);}
+
+/* LEGEND */
+.legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+.legend-item{background:var(--card2);border:1px solid var(--border2);border-radius:7px;
+  padding:4px 10px;font-size:11px;font-family:'Rajdhani',sans-serif;
+  font-weight:600;color:var(--muted);letter-spacing:.5px;}
+.legend-item span{color:var(--gold);}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--card2);
+  border:1px solid rgba(0,229,153,0.3);border-radius:12px;padding:12px 20px;
+  font-size:13px;color:var(--green);font-weight:600;z-index:999;
+  animation:toastIn .3s cubic-bezier(.34,1.56,.64,1),toastOut .3s ease 1.8s forwards;}
+
+/* ANIMATIONS */
+@keyframes fadeDown{from{opacity:0;transform:translateY(-22px);}to{opacity:1;transform:translateY(0);}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(22px);}to{opacity:1;transform:translateY(0);}}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+@keyframes popIn{from{opacity:0;transform:scale(.4);}to{opacity:1;transform:scale(1);}}
+@keyframes slideRow{from{opacity:0;transform:translateX(-14px);}to{opacity:1;transform:translateX(0);}}
+@keyframes shimmer{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
+@keyframes scan{0%{transform:translateX(-110%);}100%{transform:translateX(110%);}}
+@keyframes glowPulse{0%,100%{text-shadow:0 0 20px rgba(255,98,0,.3);}50%{text-shadow:0 0 40px rgba(255,98,0,.75),0 0 70px rgba(255,184,0,.2);}}
+@keyframes toastIn{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+@keyframes toastOut{from{opacity:1;transform:translateY(0);}to{opacity:0;transform:translateY(18px);}}
+
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--surface);}
+::-webkit-scrollbar-thumb{background:rgba(255,98,0,0.3);border-radius:10px;}
+</style>
+</head>
+<body>
+
+<div class="bg-layer"></div>
+<div class="bg-grid"></div>
+
+<div class="wrapper">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-badge">🔥 Free Fire</div>
+    <h1>BATTLE SCORE</h1>
+    <p class="header-sub">Kalkulator Poin — Sistem Peringkat &amp; Kill</p>
+  </div>
+
+  <!-- TEAM NAME -->
+  <div class="section">
+    <div class="label"><span class="label-dot"></span>Nama Tim</div>
+    <input type="text" id="teamName" placeholder="Masukkan nama tim..." value="SQUAD ALPHA">
+  </div>
+
+  <!-- INPUT GRID -->
+  <div class="input-grid">
+
+    <!-- RANK -->
+    <div class="card">
+      <div class="label"><span class="label-dot"></span>Peringkat</div>
+      <div class="rank-big">
+        <span class="rank-hash">#</span>
+        <span class="rank-num-disp" id="rankDisplay">1</span>
+        <div class="rank-pts-aside">
+          <span class="pts-num" id="rankPts">12</span>
+          <span class="pts-lbl">Pts</span>
+        </div>
+      </div>
+      <input type="range" id="rankSlider" min="1" max="12" value="1">
+      <div class="slider-labels"><span>#1 → 12 pts</span><span>#12 → 1 pt</span></div>
+      <div class="legend" id="rankLegend"></div>
+    </div>
+
+    <!-- KILL -->
+    <div class="card">
+      <div class="label"><span class="label-dot"></span>Kill (pisahkan dengan koma)</div>
+      <input type="text" id="killInput" placeholder="cth: 3,2,1 atau 5" style="margin-top:12px">
+      <div class="kill-chips" id="killChips">
+        <span style="font-size:12px;color:var(--muted);font-style:italic;">Chip kill muncul di sini...</span>
+      </div>
+      <div class="kill-footer">
+        <span class="kill-footer-lbl">Total Kill Points</span>
+        <span class="kill-total-num" id="killSum">0</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RESULT -->
+  <div class="result-card">
+    <div class="result-label">⚡ Hasil Perhitungan</div>
+    <div class="result-row">
+      <div class="res-block">
+        <div class="res-lbl">Rank Pts</div>
+        <div class="res-val rv-rank" id="resRank">12</div>
+      </div>
+      <div class="res-divider">+</div>
+      <div class="res-block">
+        <div class="res-lbl">Kill Pts</div>
+        <div class="res-val rv-kill" id="resKill">0</div>
+      </div>
+      <div class="res-divider">=</div>
+      <div class="res-block">
+        <div class="res-lbl">Total Poin</div>
+        <div class="res-val rv-total" id="resTotal">12</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACTION BUTTONS -->
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="addTeam()">＋ Tambah Tim</button>
+    <button class="btn btn-ghost" onclick="clearInputs()">Clear Input</button>
+  </div>
+
+  <div class="sep"></div>
+
+  <!-- BOARD -->
+  <div class="history">
+    <div class="history-head">
+      <div class="history-title">📋 PAPAN SKOR MATCH</div>
+      <div class="board-controls">
+        <!-- Sort toggle -->
+        <div class="sort-toggle" id="sortToggle">
+          <button class="sort-btn active" data-sort="rank" onclick="setSort('rank')">🏅 Peringkat</button>
+          <button class="sort-btn" data-sort="total" onclick="setSort('total')">⚡ Total Poin</button>
+        </div>
+        <div class="count-badge" id="countBadge">0 Tim</div>
+        <button class="btn-danger" onclick="askReset()">↺ RESET</button>
+      </div>
+    </div>
+
+    <div id="historyBoard">
+      <div class="empty">
+        <span class="empty-icon">🎯</span>
+        Belum ada tim yang ditambahkan.<br>
+        Atur peringkat &amp; kill, lalu klik <strong style="color:var(--fire)">Tambah Tim</strong>!
+      </div>
+    </div>
+  </div>
+
+</div><!-- /wrapper -->
+
+<!-- CUSTOM CONFIRM DIALOG -->
+<div class="confirm-overlay" id="confirmOverlay" style="display:none;">
+  <div class="confirm-box">
+    <div class="confirm-icon">⚠️</div>
+    <div class="confirm-title">Reset Match?</div>
+    <div class="confirm-sub">Semua data tim dalam match ini akan dihapus. Tindakan ini tidak bisa dibatalkan.</div>
+    <div class="confirm-btns">
+      <button class="confirm-yes" onclick="doReset()">Ya, Reset</button>
+      <button class="confirm-no" onclick="closeConfirm()">Batal</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── STATE ── */
+let teams    = [];
+let sortMode = 'rank'; // 'rank' | 'total'
+
+/* ── DOM ── */
+const rankSlider   = document.getElementById('rankSlider');
+const rankDisplay  = document.getElementById('rankDisplay');
+const rankPts      = document.getElementById('rankPts');
+const killInput    = document.getElementById('killInput');
+const killChips    = document.getElementById('killChips');
+const killSum      = document.getElementById('killSum');
+const resRank      = document.getElementById('resRank');
+const resKill      = document.getElementById('resKill');
+const resTotal     = document.getElementById('resTotal');
+const countBadge   = document.getElementById('countBadge');
+const historyBoard = document.getElementById('historyBoard');
+
+/* ── UTILS ── */
+function getRankPts(r){ return 13 - parseInt(r); }
+
+function parseKills(str){
+  if(!str.trim()) return [];
+  return str.split(',').map(s=>s.trim()).filter(s=>s!==''&&/^\d+$/.test(s)).map(Number);
+}
+
+let _anim={};
+function animNumber(el,to){
+  const k=el.id;
+  const from=_anim[k]??0;
+  if(_anim[k]===to) return;
+  _anim[k]=to;
+  const dur=300,t0=performance.now();
+  (function step(now){
+    const p=Math.min((now-t0)/dur,1);
+    const e=1-Math.pow(1-p,3);
+    el.textContent=Math.round(from+(to-from)*e);
+    if(p<1) requestAnimationFrame(step);
+  })(t0);
+}
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+/* ── LIVE CALC ── */
+function update(){
+  const rank=parseInt(rankSlider.value);
+  const rp=getRankPts(rank);
+  const kills=parseKills(killInput.value);
+  const kp=kills.reduce((a,b)=>a+b,0);
+
+  rankDisplay.textContent=rank;
+  rankPts.textContent=rp;
+
+  killChips.innerHTML = kills.length
+    ? kills.map(k=>`<span class="chip">+${k}</span>`).join('')
+    : '<span style="font-size:12px;color:var(--muted);font-style:italic;">Chip kill muncul di sini...</span>';
+
+  animNumber(killSum, kp);
+  animNumber(resRank, rp);
+  animNumber(resKill, kp);
+  animNumber(resTotal, rp+kp);
+}
+
+/* ── ADD TEAM ── */
+function addTeam(){
+  const name = document.getElementById('teamName').value.trim() || 'Tim';
+  const rank  = parseInt(rankSlider.value);
+  const rp    = getRankPts(rank);
+  const kills = parseKills(killInput.value);
+  const kp    = kills.reduce((a,b)=>a+b,0);
+  const total = rp+kp;
+
+  teams.push({ id: Date.now(), name, rank, rp, killDetail: kills.length?kills.join(', '):'0', kp, total });
+  renderBoard();
+  showToast(`✅ ${name} ditambahkan! +${total} poin`);
+}
+
+/* ── SORT ── */
+function setSort(mode){
+  sortMode = mode;
+  document.querySelectorAll('.sort-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.sort===mode);
+  });
+  renderBoard();
+}
+
+function getSorted(){
+  const copy = [...teams];
+  if(sortMode==='rank')  return copy.sort((a,b)=>a.rank-b.rank);    // #1 dulu
+  if(sortMode==='total') return copy.sort((a,b)=>b.total-a.total);  // poin tinggi dulu
+  return copy;
+}
+
+/* ── RENDER BOARD ── */
+function renderBoard(){
+  countBadge.textContent = `${teams.length} Tim`;
+
+  if(teams.length===0){
+    historyBoard.innerHTML=`
+      <div class="empty">
+        <span class="empty-icon">🎯</span>
+        Belum ada tim yang ditambahkan.<br>
+        Atur peringkat &amp; kill, lalu klik <strong style="color:var(--fire)">Tambah Tim</strong>!
+      </div>`;
+    return;
+  }
+
+  const sorted = getSorted();
+  const sortByRank  = sortMode==='rank';
+  const sortByTotal = sortMode==='total';
+
+  const posCls  = i => i===0?'pos-1':i===1?'pos-2':i===2?'pos-3':'pos-n';
+  const posIcon = i => i===0?'👑':i===1?'🥈':i===2?'🥉':`${i+1}`;
+
+  const sumRp    = teams.reduce((a,t)=>a+t.rp,0);
+  const sumKp    = teams.reduce((a,t)=>a+t.kp,0);
+  const sumTotal = teams.reduce((a,t)=>a+t.total,0);
+
+  const rows = sorted.map((t,i)=>`
+    <tr>
+      <td>
+        <div class="team-cell-wrap">
+          <span class="pos-badge ${posCls(i)}">${posIcon(i)}</span>
+          <span class="team-name-cell">${esc(t.name)}</span>
+        </div>
+      </td>
+      <td><span class="rank-td">#${t.rank}</span></td>
+      <td><span class="rank-td">${t.rp}</span></td>
+      <td><span class="detail-td">${esc(t.killDetail)}</span></td>
+      <td><span class="kill-td">${t.kp}</span></td>
+      <td><span class="total-td">${t.total}</span></td>
+    </tr>
+  `).join('');
+
+  historyBoard.innerHTML=`
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Tim</th>
+            <th class="${sortByRank?'sort-active':''}">Rank ${sortByRank?'▲':''}</th>
+            <th>Rank Pts</th>
+            <th>Kill Detail</th>
+            <th>Kill Pts</th>
+            <th class="${sortByTotal?'sort-active':''}">Total ${sortByTotal?'▼':''}</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+        <tfoot>
+          <tr>
+            <td colspan="2" style="color:var(--muted);font-size:11px;letter-spacing:1.2px">TOTAL ${teams.length} TIM</td>
+            <td style="color:var(--gold)">${sumRp}</td>
+            <td></td>
+            <td style="color:var(--green)">${sumKp}</td>
+            <td class="grand-td">${sumTotal}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>`;
+}
+
+/* ── CLEAR ── */
+function clearInputs(){
+  rankSlider.value=1;
+  killInput.value='';
+  _anim={};
+  update();
+}
+
+/* ── CUSTOM CONFIRM ── */
+function askReset(){
+  document.getElementById('confirmOverlay').style.display='flex';
+}
+function closeConfirm(){
+  document.getElementById('confirmOverlay').style.display='none';
+}
+function doReset(){
+  teams=[];
+  renderBoard();
+  clearInputs();
+  closeConfirm();
+  showToast('🔄 Match direset!');
+}
+// Close overlay on backdrop click
+document.getElementById('confirmOverlay').addEventListener('click',function(e){
+  if(e.target===this) closeConfirm();
+});
+
+/* ── TOAST ── */
+function showToast(msg){
+  const t=document.createElement('div');
+  t.className='toast';t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),2200);
+}
+
+/* ── RANK LEGEND ── */
+function buildLegend(){
+  const leg=document.getElementById('rankLegend');
+  leg.innerHTML=[[1,12],[3,10],[6,7],[9,4],[12,1]]
+    .map(([r,p])=>`<span class="legend-item">#${r} = <span>${p}pt</span></span>`)
+    .join('');
+}
+
+/* ── EVENTS & INIT ── */
+rankSlider.addEventListener('input',update);
+killInput.addEventListener('input',update);
+buildLegend();
+update();
+</script>
+</body>
+</html>
